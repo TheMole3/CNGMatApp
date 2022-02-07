@@ -1,0 +1,142 @@
+<head>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #background {
+      float:right;
+      background-color: #3a3839;
+      border: 20px solid #3a3839;
+      color: white;
+      padding-bottom: 10px;
+      transition: all 0.5s;
+      width: fit-content;
+    }
+    .hidden {
+      opacity: 0;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    ul, li {
+      list-style-type: disclosure-closed;
+    }
+
+    #vegTitle {
+      margin: 0;
+      margin-left: 20px;
+    }
+    #veg {
+      margin: 0
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="background" class="hidden">
+    <h2><span id="todayortomorrow">Dagens</span> lunch</h2>
+    <ul id="foodList"></ul>
+    <h5 id="vegTitle">Vegetariskt</h5>
+    <ul id="veg"></ul>
+  </div>
+
+
+  <script>
+    const { ipcRenderer } = require('electron')
+
+    function loadStyle(options) {
+      let background = document.getElementById("background");
+
+      for (let i = 0; i < Object.keys(options).length; i++) {
+      const key = Object.keys(options)[i];
+      const val = Object.values(options)[i];
+
+      switch(key) 
+      {
+        case "theme":
+
+          if(val == "light")
+          {
+            background.style.borderColor = "#E4E4E4"
+            background.style.backgroundColor = "#E4E4E4"
+            background.style.color = "black"
+          } else if(val == "dark") {
+            background.style.borderColor = "#3a3839"
+            background.style.backgroundColor = "#3a3839"
+            background.style.color = "white"
+          }
+
+        break;
+        
+        case "rounded":
+
+          if(JSON.parse(val)) {
+            background.style.borderBottomLeftRadius = "10px";
+          } else {
+            background.style.borderBottomLeftRadius = "0";
+          }
+
+        break;
+
+        case "font":
+
+          background.style.fontFamily  = val;
+
+        break;
+
+        case "customColor":
+
+          background.style.backgroundColor = val;
+          background.style.borderColor = val;
+
+        break;
+      }
+      }
+    }
+  
+    ipcRenderer.on('data', (event, food, options) => { // Get the food from ipcMain
+      console.log("Got food: ", food)
+      if(!food) window.close()
+
+      document.getElementById('todayortomorrow').innerText = food.today?"Dagens":"Morgondagens"
+      
+      for (let i = 0; i < food.food.length; i++) {
+        const element = food.food[i];
+        let li = document.createElement("li");
+        li.innerText = element;
+        document.getElementById("foodList").appendChild(li)
+      }
+  
+      if(!food.veg) {
+        document.getElementById('vegTitle').style.display = "none";
+        document.getElementById('veg').style.display = "none"
+      };
+
+      let li = document.createElement("li");
+      li.innerText = food.veg;
+      document.getElementById("veg").appendChild(li)
+
+      loadStyle(options)
+    })
+
+    ipcRenderer.send('ready')
+
+    document.getElementById("background").classList.remove("hidden");
+
+    ipcRenderer.on("getSettings", (event, settings) => {
+      settings = JSON.parse(settings);
+      loadStyle(settings)
+    })
+    
+    window.addEventListener("devicemotion", () => { // When window is moved aka brought to focus
+        ipcRenderer.send("getSettings");
+    })
+  </script>
+
+</body>
+

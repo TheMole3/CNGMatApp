@@ -1,0 +1,68 @@
+<head>
+    <style>
+        td {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <center>
+        <table>
+            <tr>
+                <td>Ljust tema?</th>
+                <td><input id="theme" type="checkbox"/></th>
+            </tr>
+            <tr>
+                <td>Rundade hörn?</th>
+                <td><input id="rounded" type="checkbox"/></th>
+            </tr>
+            <tr>
+                <td>Font</th>
+                <td><input id="font" type="input"/></th>
+            </tr>
+            <tr>
+                <td>Custom färg</th>
+                <td><input id="color" type="checkbox"/><input id="colorCode" type="input"/></th>
+            </tr>
+
+        </table> 
+    </center>
+
+    <script>
+
+        const { ipcRenderer } = require('electron');
+
+        ipcRenderer.on("getSettings", (event, settings) => {
+            settings = JSON.parse(settings)
+
+            document.getElementById("theme").checked = (settings.theme=="light")
+            document.getElementById("rounded").checked = (settings.rounded == true)
+            document.getElementById("font").value = settings.font
+            document.getElementById("color").checked = (settings.customColor?true:false)
+            if(settings.customColor) document.getElementById("colorCode").value = settings.customColor
+            
+        })
+
+        ipcRenderer.send("getSettings");
+
+        document.getElementById("theme").onchange = () => {
+            ipcRenderer.send("setSetting", "theme", document.getElementById("theme").checked?"light":"dark")
+        }
+        document.getElementById("rounded").onchange = () => {
+            ipcRenderer.send("setSetting", "rounded", document.getElementById("rounded").checked)
+        }
+        document.getElementById("font").onchange = () => {
+            ipcRenderer.send("setSetting", "font", document.getElementById("font").value)
+        }
+        document.getElementById("colorCode").onchange = () => {
+            if(document.getElementById("color").checked) ipcRenderer.send("setSetting", "customColor", document.getElementById("colorCode").value)
+        }
+        document.getElementById("color").onchange = () => {
+            if(!document.getElementById("color").checked) ipcRenderer.send("setSetting", "customColor", false);
+            else ipcRenderer.send("setSetting", "customColor", document.getElementById("colorCode").value);
+        }
+
+
+
+    </script>
+</body>
