@@ -1,7 +1,8 @@
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, Menu, Tray } = require('electron');
 const path = require('path');
 const { windowManager } = require("node-window-manager");
 const request = require('request');
+const AutoLaunch = require('auto-launch');
 
 const Store = require('electron-store');
 const store = new Store({
@@ -70,7 +71,6 @@ function createFoodWindow ()
     })
 
   window.loadURL(`file://${__dirname}/foodViewer.html`)
-  window.openDevTools()
 
   window.on('close', function() {
     console.log("Closing foodviewer")
@@ -96,9 +96,24 @@ function createSettingsWindow()
   window.loadURL(`file://${__dirname}/settingsWindow.html`)
 }
 
+const { autoUpdater } = require('electron-updater');
+
+autoUpdater.on('update-available', () => {
+  autoUpdater.quiteAndInstall();
+});
+
 app.on('ready', () => 
 {
-  createSettingsWindow();
+  autoUpdater.checkForUpdatesAndNotify();
+  
+  let autoLaunch = new AutoLaunch({
+    name: 'CNG matvisare - windows',
+    path: app.getPath('exe'),
+  });
+  autoLaunch.isEnabled().then((isEnabled) => {
+    if (!isEnabled) autoLaunch.enable();
+  });
+
 
   let foodWindow = createFoodWindow();
   foodWindow.hide();
@@ -140,11 +155,24 @@ app.on('ready', () =>
   }, 100)
 
   setInterval(() =>  { // Update food every 2 hours
-    loadFood()
+    loadFood();
   }, 1000*60*60*2)
 
 
+  const template = [
+    {
+      id: "1",
+      label: 'Inställningar',
+      click: async () => {
+        createSettingsWindow();
+      }
+    }
+  ]
   
+  const menu = Menu.buildFromTemplate(template)
+  tray = new Tray('./src/logo.png')
+  tray.setToolTip('CNG Matvisar windows')
+  tray.setContextMenu(menu)
 
 
   // Communication
